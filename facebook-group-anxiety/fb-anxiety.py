@@ -3,11 +3,13 @@ from bs4 import BeautifulSoup # a powerful HTML parser
 from selenium.webdriver import Chrome
 import pandas as pd # for .csv file read and write
 import re # for regular regression handling
+import time
 
 headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36'}
 path = "/usr/local/Caskroom/chromedriver/86.0.4240.22/chromedriver"
 driver = Chrome(executable_path=path)
-driver.implicitly_wait(3)
+time.sleep(2)
+#driver.implicitly_wait(3)
 num_of_scroll = 20
 
 def scroll_to_the_bottom():
@@ -17,7 +19,8 @@ def scroll_to_the_bottom():
             print('Scrolling..', retry)
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
             retry = retry + 1
-            driver.implicitly_wait(5)
+            time.sleep(3)
+            #driver.implicitly_wait(5)
 
 """ get all position <a> tags for the list of articles, results stored in a dictionary"""
 def linksByKeys(keys):
@@ -40,7 +43,7 @@ def getFacebook():
 
     base_url =  'https://web.facebook.com'
     group_url = 'https://web.facebook.com/groups/944893365848617'
-    num_of_scroll = 10
+    #num_of_scroll = 20
     email = "arefieqa.1996@gmail.com"
     password = "Fiqa1996"
 
@@ -53,19 +56,21 @@ def getFacebook():
     # email_input = login_container.find_element_by_xpath("//input[@type='email']")
     email_input = login_container.find_element_by_xpath("//input[@id='email']")
     email_input.send_keys(email)
-    driver.implicitly_wait(3)
+    #driver.implicitly_wait(1)
     # password_input = login_container.find_element_by_xpath("//input[@type='password']")
     password_input = login_container.find_element_by_xpath("//input[@id='pass']")
     password_input.send_keys(password)
-    driver.implicitly_wait(2)
+    #driver.implicitly_wait(3)
     login_button = login_container.find_element_by_xpath("//button[@type='submit']")
     login_button.click()
-    driver.implicitly_wait(5)
+    time.sleep(5)
+    #driver.implicitly_wait(5)
 
 
     print('Go to the group')
     driver.get(group_url)
-    driver.implicitly_wait(5)
+    time.sleep(3)
+    #driver.implicitly_wait(8)
 
     # Scroll
     scroll_to_the_bottom()
