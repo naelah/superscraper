@@ -9,18 +9,41 @@ headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWeb
 path = "/usr/local/Caskroom/chromedriver/86.0.4240.22/chromedriver"
 driver = Chrome(executable_path=path)
 time.sleep(2)
-num_of_scroll = 20          # update for more posts
 
-def scroll_to_the_bottom():
-    retry = 0
+def getPostDetail(post_href):
+    ## post_href: a facebook post url
+    ## return: post details from the post page
 
-    while retry < num_of_scroll:
-        print('Scrolling..', retry)
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-        retry = retry + 1
-        time.sleep(3)
+    base_href = 'https://mobile.facebook.com'
+    print('Scraping ',post_href,'...')
+    driver.get(base_href+post_href)
+    time.sleep(3)
+    
+    comments = list()
+    timestamp = ''
+    content = list()
+    
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+    content = soup.find_all('p')
+    if not content:
+        stories = soup.find_all('span',{'class' : '_1-sk'})
+        for story in stories:
+            content.append(story.text)
+        #content = story.text
+    content = list(dict.fromkeys(content))
+    timestamps = soup.find_all('abbr')
+    if timestamps:
+        timestamp = timestamps[0].text
+    
+    comments_all = soup.find_all('div', {'data-sigil' : 'comment-body'})
+    
+    for comment in comments_all:
+        comments.append(comment.text)
+    
+    
+    return pd.Series({'content': content, 'timestamp' : timestamp, 'comments' : comments})
 
-""" scroll n times in fb page group  """
+""" Login Facebook """
 def getFacebook():
     ## return: a list of links
 
@@ -43,46 +66,11 @@ def getFacebook():
     login_button.click()
     time.sleep(5)
 
-    getLinks(group_id)
-
-
-""" parse HTML strings for the list of posts"""
-def getLinks(group_id):
-    ## group_id: id of the fb group
-    ## return: print parsed results to .csv file
-
-    mobile_url = 'https://mobile.facebook.com/groups/'
-    print('Go to the group')
-    driver.get(mobile_url+group_id)
-    time.sleep(3)
-
-
-    # Scroll
-    scroll_to_the_bottom()
-    driver.implicitly_wait(5)
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
-   
-    # Parse links
-    urls = list()
-    urls_clean = list()
-    for a in soup.find_all('a', {'class': '_5msj'}):
-        urls.append(a['href'])
-
-    for url in urls:
-        m = re.search('.*&refid', url)
-        if m:
-            text = m.group(0)
-            urls_clean.append(text[:-6])
-    urls_clean
-
-    print("Successfully scraped",len(urls_clean),"post links")
-    # transfrom the result to a pandas.DataFrame
-    result = pd.DataFrame(urls_clean,columns=['post_links'])
-
-    # save result,
-    file_name = group_id+'.csv'
-    result.to_csv(file_name,index=False)
-
+    filename = group_id+'csv'
+    # Load csv & parse one by one
+    df = pd.read_csv(filename)
+    df[['content','timestamp','comments']] = df['post_links'].apply(lambda x: getPostDetail(x))
+    df.to_csv(filename, index = False)
 
 def main():
 
