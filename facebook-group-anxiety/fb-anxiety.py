@@ -9,167 +9,83 @@ headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWeb
 path = "/usr/local/Caskroom/chromedriver/86.0.4240.22/chromedriver"
 driver = Chrome(executable_path=path)
 time.sleep(2)
-#driver.implicitly_wait(3)
 num_of_scroll = 20
 
 def scroll_to_the_bottom():
-        retry = 0
+    retry = 0
 
-        while retry < num_of_scroll:
-            print('Scrolling..', retry)
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
-            retry = retry + 1
-            time.sleep(3)
-            #driver.implicitly_wait(5)
+    while retry < num_of_scroll:
+        print('Scrolling..', retry)
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
+        retry = retry + 1
+        time.sleep(3)
 
-""" get all position <a> tags for the list of articles, results stored in a dictionary"""
-def linksByKeys(keys):
-    ## keys: a list of article keywords
-    ## return: a dictionary of links
-
-    links_dic = dict()
-    # scrape key words one by one
-    for key in keys:
-        print('Scraping articles: ', key, ' ...')
-        links_dic[key] = linksByKey(key)
-        print('{} {} articles found!'.format(len(links_dic[key]),key))
-    return links_dic
-
-
-""" scroll n times in fb page group """
+""" scroll n times in fb page group  """
 def getFacebook():
-    ## key: search keyword
     ## return: a list of links
 
     base_url =  'https://web.facebook.com'
-    group_url = 'https://web.facebook.com/groups/944893365848617'
-    #num_of_scroll = 20
+    group_id = '944893365848617'
     email = "arefieqa.1996@gmail.com"
     password = "Fiqa1996"
-
-    
     print('Go to Facebook')
     driver.get(base_url)
+
+    # Login
     print('Log in to Facebook')
-    # login_container = driver.find_element_by_xpath("//div[@class='menu_login_container rfloat _ohf']")
     login_container = driver.find_element_by_xpath("//form[@class='_featuredLogin__formContainer']")
-    # email_input = login_container.find_element_by_xpath("//input[@type='email']")
     email_input = login_container.find_element_by_xpath("//input[@id='email']")
     email_input.send_keys(email)
-    #driver.implicitly_wait(1)
-    # password_input = login_container.find_element_by_xpath("//input[@type='password']")
     password_input = login_container.find_element_by_xpath("//input[@id='pass']")
     password_input.send_keys(password)
-    #driver.implicitly_wait(3)
     login_button = login_container.find_element_by_xpath("//button[@type='submit']")
     login_button.click()
     time.sleep(5)
-    #driver.implicitly_wait(5)
+
+    getLinks(group_id)
 
 
+""" parse HTML strings for the list of posts"""
+def getLinks(group_id):
+    ## group_id: id of the fb group
+    ## return: print parsed results to .csv file
+
+    mobile_url = 'https://mobile.facebook.com/groups/'
     print('Go to the group')
-    driver.get(group_url)
+    driver.get(mobile_url+group_id)
     time.sleep(3)
-    #driver.implicitly_wait(8)
+
 
     # Scroll
     scroll_to_the_bottom()
     driver.implicitly_wait(5)
     soup = BeautifulSoup(driver.page_source, 'html.parser')
+   
+    # Parse links
+    urls = list()
+    urls_clean = list()
+    for a in soup.find_all('a', {'class': '_5msj'}):
+        urls.append(a['href'])
 
-    # parse fb soup here
+    for url in urls:
+        m = re.search('.*&refid', url)
+        if m:
+            text = m.group(0)
+            urls_clean.append(text[:-6])
+    urls_clean
 
-    # kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x c1et5uql ii04i59q
-    #texts = soup.find_all('class')
+    print("Successfully scraped",len(urls_clean),"post links")
+    # transfrom the result to a pandas.DataFrame
+    result = pd.DataFrame(urls_clean,columns=['post_links'])
 
+    # save result,
+    file_name = group_id+'.csv'
+    result.to_csv(file_name,index=False)
 
-
-
-    position_links = []
-    loaded = True
-    while loaded:
-        #print('Loading page {} ...'.format(pn))
-        #params['pgno'] = pn
-        r = requests.get(base_url, headers=headers)
-
-        # extract position <a> tags
-        soup = BeautifulSoup(r.text,'html.parser')
-        links = soup.find_all('a',{'data-content-type':'Article'})
-
-        # if return nothing, means the function reach the last page, return results
-        if not len(links):
-            loaded = False
-        else:
-            position_links += links
-            pn += 1
-    return position_links
-
-
-""" parse HTML strings for the list of roles"""
-def parseLinks(links_dic):
-    ## links_dic: a dictionary of links
-    ## return: print parsed results to .csv file
-
-    for key in links_dic:
-        jobs = []
-        for link in links_dic[key]:
-            jobs.append([key] + parseLink(link))
-
-        # transfrom the result to a pandas.DataFrame
-        result = pd.DataFrame(jobs,columns=['key_word','article_id','title','category','author','article_href','content','side_note'])
-
-        # save result,
-        file_name = key+'.csv'
-        result.to_csv(file_name,index=False)
-
-
-""" parse a single <a> tag, extract the information, triggered by parseLinks function """
-def parseLink(link):
-	## link: a single position <a> tag
-	## return: information of a single article
-
-	# unique id assigned to an article
-	article_id = link['data-content-id'].strip()
-	# article title
-	title = link['data-content-title'].strip()
-	# posted country
-	category = link['data-content-category'].strip()
-	# the web address towards to the post detail page
-	author = link['data-content-author'].strip()
-	# the web address towards to the post detail page
-	article_href = link['href']
-	# go to post detail page, and fetch information
-	other_detail = getArticleDetail(article_href)
-
-	return [article_id,title,category,author, article_href] + other_detail
-
-
-""" extract details from post detail page """
-def getArticleDetail(article_href):
-    ## article_href: an article url
-    ## return: post details from the article page
-
-    print('Scraping ',article_href,'...')
-    driver.get(article_href)
-	
-    try:
-        content=driver.find_element_by_id("story-body").text
-    except:
-        content = None
-    try:
-        side_note=driver.find_element_by_id("sideNote").text
-    except:
-        side_note = None
-    
-    return [content, side_note]
 
 def main():
 
-    # a list of key words to be crawled
-    key_words = ['wall street crash']
-    s = requests.session()
-    links_posts = getFacebook()
-    parseLinks(links_posts)
+    getFacebook()
 
 if __name__ == '__main__':
 	main()
