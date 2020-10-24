@@ -66,11 +66,11 @@ def getFacebook():
     login_button.click()
     time.sleep(5)
 
-    filename = group_id+'csv'
+    filename = group_id+'.csv'
     # Load csv & parse one by one
-    df = pd.read_csv(filename)
+    df = pd.read_csv('data/'+filename)
     df[['content','timestamp','comments']] = df['post_links'].apply(lambda x: getPostDetail(x))
-    df.to_csv(filename, index = False)
+    df.to_csv('data/'+filename, index = False)
 
 def main():
 

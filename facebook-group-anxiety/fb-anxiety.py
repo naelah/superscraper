@@ -9,7 +9,7 @@ headers = {'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWeb
 path = "/usr/local/Caskroom/chromedriver/86.0.4240.22/chromedriver"
 driver = Chrome(executable_path=path)
 time.sleep(2)
-num_of_scroll = 20          # update for more posts
+num_of_scroll = 10000          # update for more posts
 
 def scroll_to_the_bottom():
     retry = 0
@@ -25,8 +25,8 @@ def getFacebook():
     ## return: a list of links
 
     base_url =  'https://web.facebook.com'
-    # group_id = '1059135227812853'     # Stress Management
-    group_id = '944893365848617'        # Anxiety Disorder
+    group_id = '1059135227812853'     # Stress Management
+    #group_id = '944893365848617'        # Anxiety Disorder
     email = "arefieqa.1996@gmail.com"
     password = "Fiqa1996"
     print('Go to Facebook')
@@ -81,7 +81,7 @@ def getLinks(group_id):
 
     # save result,
     file_name = group_id+'.csv'
-    result.to_csv(file_name,index=False)
+    result.to_csv('data/'+file_name,index=False)
 
 
 def main():
