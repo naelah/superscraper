@@ -32,12 +32,16 @@ def getReview(list_res):
         soup = BeautifulSoup(driver.page_source, 'html.parser')
         
         pages = int(item[2]/6)
+        if (pages < 1) & (item[2] >0):
+            pages = 1
         
         product_rating_overview = soup.find_all('span',{'class':'product-rating-overview__rating-score'})
         if len(product_rating_overview)>0:
             rating_ov = float(product_rating_overview[0].text)
             for i in range(pages):
                 print("scraping page",i,"of",pages)
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+
                 product_main = soup.find_all('div',{'class': 'shopee-product-rating__main'})
             
                 for main in product_main:
